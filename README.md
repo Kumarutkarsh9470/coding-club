@@ -1,125 +1,109 @@
-1. Introduction
+#Task 1: Relationship Prediction Analysis from Student Data
 
-CampusPulse is a strategic data project designed to uncover factors influencing whether a student is in a romantic relationship, based on lifestyle, academic, and social survey data. This README guides you through the full pipeline, from raw data to explainable models.
+This project explores student behavioral and academic data to analyze the likelihood of being in a romantic relationship. The analysis involves end-to-end steps including EDA, data preprocessing, classification modeling, performance evaluation, and explainability through SHAP.
 
-2. Dataset Overview
+#LEVEL 1: Exploratory Data Analysis (EDA)
 
-Features: Demographics, academic performance (G1, G2, G3), lifestyle (Feature_1=Screen Time, Feature_2=Stress Level, Feature_3=Social Activity), alcohol use, family background, and more.
+#Objectives:
+- Understand hidden/unknown features.
+- Explore relationships between behavioral indicators and academic or social variables.
 
-Target: romantic (yes/no)
+#Findings:
+- Feature 1: Likely represents weekly screen time. Correlates positively with internet access and failures.
+- Feature 2: Represents stress levels. Shows non-linear effect on grades—grades rise with stress up to a point, then fall.
+- Feature 3: Likely social activity. Correlates positively with going out and affects romantic relationships.
 
-3. Exploratory Data Analysis (EDA)
+#Visual Analysis:
+- Correlation heatmaps, scatter plots, and histograms were used to identify trends.
+- Screen time and social activity interplay showed visible influence on academic performance and social behavior.
 
-3.1 Data Cleaning & Missing Values
 
-Identified columns with missing values.
+#LEVEL 2: Handling Missing Values
 
-Imputation strategies:
+- Categorical Scales (e.g., famsize, traveltime): Imputed using 'most_frequent'.
+- Continuous Variables (e.g., Feature_1): Imputed using 'median'.
 
-Numeric/ordinal: median
+ #LEVEL 3: Insightful Questions and Answers
 
-Categorical/binary: mode
+1. Does social activity differ by romantic status or family relationship? 
+    No significant difference; possibly due to couple activities being counted as social.
 
-Rule-based for Famsize using Pstatus
-3.2 Visualizing Key Features
+2. Is there a link between screen time, social activity, and stress?  
+    Higher social activity = lower stress. Higher screen time = lower social activity.
 
-Histograms for Feature_1, Feature_2, Feature_3
+3. Do students with low parental education show higher stress/screen time? 
+    No clear stress trend, but lower parental education corresponds to higher screen time.
 
-Scatter plots to inspect correlations (e.g., screen time vs. grades)
+4. What’s the trade-off between stress and social activity among students with high absences?  
+    High absence students tend to have moderate-to-low social activity and varying stress.
 
-Violin and box plots to compare distributions by romantic status
+5. Does travel time affect grades and absences?
+    Longer travel time correlates with lower grades but not necessarily higher absences.
 
-3.3 Insightful EDA Questions
+6. Does stress impact absenteeism?  
+    Yes. Higher stress levels correspond to more absences, especially at moderate stress.
 
-Screen Time vs. Stress Level (Feature_1 vs Feature_2)
+7. Are students with educated parents more likely to be in relationships?  
+    Not conclusively. Students with very low Medu (mother's education) are rarely in relationships.
 
-Stress vs. Health & Absences (violin plots)
+# LEVEL 4: Classification Models
 
-Social Activity by Romantic Status (violin & count plots)
+# Logistic Regression
+- Accuracy: 61%
+- F1-Score (Romantic=Yes): 0.51  
+- Confusion Matrix:
+  - True Positives: 40
+  - False Positives: 45
+  - True Negatives: 78
+  - False Negatives: 32
 
-Parental Education vs. Grades (violin plots for Medu, Fedu)
+# Random Forest
+- Accuracy: 63%
+- F1-Score (Romantic=Yes): 0.23  
+- Performs well for predicting singles but poorly for those in relationships.
 
-Interaction of Screen Time, Social Activity, and Stress (bubble chart)
+# SVM
+- Similar performance to Logistic Regression.
+- Decision boundaries are more linear.
 
-sns.violinplot(x='romantic', y='Feature_1', data=df)
+# Top 10 Important Features (Random Forest):
+| Rank | Feature         | Importance |
+|------|------------------|------------|
+| 1    | G3 (Final Grade) | 0.0674     |
+| 2    | G2               | 0.0638     |
+| 3    | G1               | 0.0634     |
+| 4    | Absences         | 0.0546     |
+| 5    | Feature_1        | 0.0536     |
+| ...  | ...              | ...        |
 
-...and more questions as explored.
 
-4. Data Preprocessing
+# LEVEL 5: Model Explainability with SHAP
 
-4.1 Imputation
+#Decision Boundaries (Goout vs Walc):
+- Higher weekend alcohol use and moderate going-out frequency → More likely in romantic relationships.
+- Lower alcohol use and social activity → More likely single.
+- Boundaries are non-linear, indicating interaction effects.
 
-Used SimpleImputer from scikit-learn for batch imputation.
+#SHAP Summary:
+- Most feature interactions are minor (near 0 SHA interaction value).
+- Few combinations show high influence on the prediction, suggesting local interactions matter more than global ones.
 
-Separate transformers for median and mode.
+#Waterfall Plots:
+- SHAP waterfall plots visualize the additive impact of each feature for individual predictions.
+- Some features (e.g., Feature_15, Feature_21) have consistent negative effects on the romantic prediction.
 
-4.2 Encoding & Scaling
+#Conclusion
 
-One-Hot Encoding for categorical features via OneHotEncoder
+- A student's screen time, stress, social activity, and grades collectively influence their romantic status prediction.
+- The best model performance (~63% accuracy) is from **Random Forest**, though it struggles to correctly predict those in relationships.
+- SHAP helps uncover both global and local feature contributions, revealing subtle interactions beyond simple correlation.
 
-Standard Scaling for numeric features via StandardScaler
 
-All steps combined in a ColumnTransformer and Pipeline:
+#Tools Used
+- Python, Pandas, Matplotlib, Seaborn
+- Scikit-learn (Logistic Regression, Random Forest, SVM)
+- SHAP for interpretability
 
-preprocessor = ColumnTransformer([
-    ('num', num_transformer, numerical_cols),
-    ('cat', cat_transformer, categorical_cols)
-])
 
-5. Modeling
 
-5.1 Train/Test Split
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, stratify=y, random_state=42
-)
-
-5.2 Classifier Setup
-
-Three balanced classifiers:
-
-models = {
-  'Logistic Regression': Pipeline([...]),
-  'Random Forest':       Pipeline([...]),
-  'SVM':                 Pipeline([...])
-}
-
-5.3 Performance Comparison
-
-Evaluated accuracy, precision, recall, F1-score, ROC-AUC
-
-Example:
-
-print(classification_report(y_test, y_pred))
-print('AUC:', roc_auc_score(y_test, y_proba))
-
-Results: Logistic and SVM ~0.61 AUC, Random Forest ~0.59 AUC
-
-6. SHAP Explainability
-
-6.1 Global Feature Importance
-
-explainer = shap.TreeExplainer(rf)
-shap_values = explainer.shap_values(X_train_proc)[1]
-shap.summary_plot(shap_values, X_train_proc, feature_names)
-
-6.2 Local Explanations
-
-idx_yes = np.where(rf_pipe.predict(X_test)==1)[0][0]
-shap.plots.waterfall(explainer(X_test_proc[idx_yes]))
-
-Interpret in plain language: which features push prediction toward "Yes" or "No".
-
-7. How to Run
-
-Install requirements: pip install -r requirements.txt (includes scikit-learn, pandas, shap, seaborn)
-
-Place Dataset.csv in the project root.
-
-Run the notebook task.ipynb or scripts:
-
-python scripts/eda.py
-
-python scripts/preprocess.py
-
-python scripts/train_and_explain.py
